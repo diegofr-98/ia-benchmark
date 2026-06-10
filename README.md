@@ -76,6 +76,9 @@ Compares multiple models side by side and shows the winner for each benchmark:
 +-------------+--------------+------------------+---------------------+----------------+
 ```
 
+<img width="1481" height="685" alt="imagen" src="https://github.com/user-attachments/assets/0a57fa0e-a96d-421f-9f0e-305a8eddcbfd" />
+
+
 ### Column descriptions
 
 | Column | Description |
