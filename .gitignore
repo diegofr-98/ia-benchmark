@@ -1,0 +1,6 @@
+node_modules/
+dist/
+.pricing-cache.json
+*.log
+.DS_Store
+.env

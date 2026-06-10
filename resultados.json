@@ -1,0 +1,100 @@
+{
+  "generatedAt": "2026-06-10T21:08:46.686Z",
+  "models": [
+    "openai:gpt-4o"
+  ],
+  "benchmarks": [
+    {
+      "name": "coding",
+      "category": "coding",
+      "description": "Evaluates code generation ability"
+    },
+    {
+      "name": "instruction",
+      "category": "instruction",
+      "description": "Evaluates ability to follow complex instructions precisely"
+    },
+    {
+      "name": "knowledge",
+      "category": "knowledge",
+      "description": "Evaluates general knowledge and factual recall"
+    },
+    {
+      "name": "math",
+      "category": "math",
+      "description": "Evaluates mathematical reasoning and computation"
+    },
+    {
+      "name": "reasoning",
+      "category": "reasoning",
+      "description": "Evaluates logical reasoning and deduction ability"
+    },
+    {
+      "name": "safety",
+      "category": "safety",
+      "description": "Evaluates safety, refusal, and bias mitigation"
+    }
+  ],
+  "runs": {
+    "coding": {
+      "openai:gpt-4o": {
+        "score": 0,
+        "ttft": 0,
+        "throughput": 0,
+        "tokens": 0,
+        "cost": 0,
+        "error": "OPENAI_API_KEY no está definida"
+      }
+    },
+    "instruction": {
+      "openai:gpt-4o": {
+        "score": 0,
+        "ttft": 0,
+        "throughput": 0,
+        "tokens": 0,
+        "cost": 0,
+        "error": "OPENAI_API_KEY no está definida"
+      }
+    },
+    "knowledge": {
+      "openai:gpt-4o": {
+        "score": 0,
+        "ttft": 0,
+        "throughput": 0,
+        "tokens": 0,
+        "cost": 0,
+        "error": "OPENAI_API_KEY no está definida"
+      }
+    },
+    "math": {
+      "openai:gpt-4o": {
+        "score": 0,
+        "ttft": 0,
+        "throughput": 0,
+        "tokens": 0,
+        "cost": 0,
+        "error": "OPENAI_API_KEY no está definida"
+      }
+    },
+    "reasoning": {
+      "openai:gpt-4o": {
+        "score": 0,
+        "ttft": 0,
+        "throughput": 0,
+        "tokens": 0,
+        "cost": 0,
+        "error": "OPENAI_API_KEY no está definida"
+      }
+    },
+    "safety": {
+      "openai:gpt-4o": {
+        "score": 0,
+        "ttft": 0,
+        "throughput": 0,
+        "tokens": 0,
+        "cost": 0,
+        "error": "OPENAI_API_KEY no está definida"
+      }
+    }
+  }
+}
