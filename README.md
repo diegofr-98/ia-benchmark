@@ -5,32 +5,23 @@ CLI tool to run LLM benchmarks and compare performance, speed, and cost across m
 ## Installation
 
 ```bash
-git clone <repo>
-cd ai-benchmark
-npm install
+npm i -g ia-benchmark
 ```
 
 ## Basic usage
 
 ```bash
 # Single model, all benchmarks
-npx tsx src/index.ts openai:gpt-4o --all
+ia-benchmark openai:gpt-4o --all
 
 # Single model, specific benchmark
-npx tsx src/index.ts openai:gpt-4o -b reasoning
+ia-benchmark openai:gpt-4o -b reasoning
 
 # Compare multiple models
-npx tsx src/index.ts openai:gpt-4o anthropic:claude-sonnet-4.6 google:gemini-2.0-flash --all
+ia-benchmark openai:gpt-4o anthropic:claude-sonnet-4.6 google:gemini-2.0-flash --all
 
 # Export results
-npx tsx src/index.ts openai:gpt-4o --all --json results.json --csv results.csv -v
-```
-
-You can also compile and run:
-
-```bash
-npm run build
-node dist/index.js openai:gpt-4o --all
+ia-benchmark openai:gpt-4o --all --json results.json --csv results.csv -v
 ```
 
 ## Output: results table
