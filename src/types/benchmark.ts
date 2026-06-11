@@ -18,9 +18,23 @@ export interface BenchmarkResult {
   completionTokens?: number;
 }
 
+export type BenchmarkProgressCallback = (event: {
+  questionIndex: number;
+  totalQuestions: number;
+  correct: boolean;
+  ttft: number;
+  tokens: number;
+  throughput: number;
+  responseSnippet: string;
+}) => void;
+
 export interface Benchmark {
   name: string;
   category: string;
   description: string;
-  run: (provider: import('../types/provider').ProviderAdapter, model: string) => Promise<BenchmarkResult>;
+  run: (
+    provider: import('../types/provider').ProviderAdapter,
+    model: string,
+    onProgress?: BenchmarkProgressCallback,
+  ) => Promise<BenchmarkResult>;
 }

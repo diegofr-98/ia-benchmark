@@ -1,4 +1,5 @@
 import Table from 'cli-table3';
+import pc from 'picocolors';
 import type { Benchmark, BenchmarkResult } from '../types/index.js';
 
 interface RunMap {
@@ -11,6 +12,24 @@ interface ResultsData {
   models: string[];
   benchmarks: Pick<Benchmark, 'name' | 'category' | 'description'>[];
   runs: RunMap;
+}
+
+function scoreColor(score: number): (s: string) => string {
+  if (score >= 80) return pc.green;
+  if (score >= 50) return pc.yellow;
+  return pc.red;
+}
+
+function ttftColor(ms: number): (s: string) => string {
+  if (ms < 2000) return pc.green;
+  if (ms < 5000) return pc.yellow;
+  return pc.red;
+}
+
+function costColor(cost: number): (s: string) => string {
+  if (cost < 0.01) return pc.green;
+  if (cost < 0.05) return pc.yellow;
+  return pc.red;
 }
 
 export function renderResults(results: ResultsData): string {
@@ -58,11 +77,11 @@ function renderSingleModel(benchmarks: Pick<Benchmark, 'name'>[], model: string,
 
     table.push([
       bm.name,
-      run.score != null ? `${run.score}/100` : 'N/A',
-      run.ttft != null ? `${run.ttft}ms` : 'N/A',
-      run.throughput != null ? String(run.throughput) : 'N/A',
-      run.tokens != null ? String(run.tokens) : 'N/A',
-      run.cost != null ? `$${run.cost.toFixed(4)}` : 'N/A',
+      run.score != null ? scoreColor(run.score)(`${run.score}/100`) : pc.dim('N/A'),
+      run.ttft != null ? ttftColor(run.ttft)(`${run.ttft}ms`) : pc.dim('N/A'),
+      run.throughput != null ? pc.cyan(String(run.throughput)) : pc.dim('N/A'),
+      run.tokens != null ? String(run.tokens) : pc.dim('N/A'),
+      run.cost != null ? costColor(run.cost)(`$${run.cost.toFixed(4)}`) : pc.dim('N/A'),
     ]);
 
     totalScore += run.score || 0;
@@ -74,13 +93,14 @@ function renderSingleModel(benchmarks: Pick<Benchmark, 'name'>[], model: string,
   }
 
   if (count > 0) {
+    const avgScore = Math.round(totalScore / count);
     table.push([
-      'AVG',
-      `${Math.round(totalScore / count)}/100`,
-      `${Math.round(totalTtft / count)}ms`,
-      `${(totalThroughput / count).toFixed(1)}`,
-      `${Math.round(totalTokens / count)}`,
-      `${(totalCost / count).toFixed(4)}`,
+      pc.bold('AVG'),
+      pc.bold(scoreColor(avgScore)(`${avgScore}/100`)),
+      pc.bold(ttftColor(Math.round(totalTtft / count))(`${Math.round(totalTtft / count)}ms`)),
+      pc.bold(pc.cyan(`${(totalThroughput / count).toFixed(1)}`)),
+      pc.bold(`${Math.round(totalTokens / count)}`),
+      pc.bold(costColor(totalCost / count)(`${(totalCost / count).toFixed(4)}`)),
     ]);
   }
 
@@ -130,12 +150,12 @@ function renderMultiModel(benchmarks: Pick<Benchmark, 'name'>[], models: string[
     for (const m of models) {
       const run = runs[bm.name]?.[m];
       if (!run) {
-        row.push('N/A');
+        row.push(pc.dim('N/A'));
         continue;
       }
 
       const score = run.score ?? 0;
-      row.push(`${score}/100`);
+      row.push(scoreColor(score)(`${score}/100`));
 
       if (score > bestScore) {
         bestScore = score;
@@ -148,64 +168,64 @@ function renderMultiModel(benchmarks: Pick<Benchmark, 'name'>[], models: string[
       if (run.throughput != null) modelThroughputs[m].push(run.throughput);
     }
 
-    row.push(winner);
+    row.push(pc.bold(winner));
     table.push(row);
   }
 
-  const avgRow: (string | number)[] = ['AVG Score'];
+  const avgRow: (string | number)[] = [pc.bold('AVG Score')];
   let bestAvgScore = -1;
   let overallWinner = '-';
   for (const m of models) {
     const scores = modelScores[m];
     if (scores.length === 0) {
-      avgRow.push('N/A');
+      avgRow.push(pc.dim('N/A'));
       continue;
     }
     const avg = scores.reduce((a, b) => a + b, 0) / scores.length;
-    avgRow.push(avg.toFixed(1));
+    avgRow.push(pc.bold(scoreColor(avg)(avg.toFixed(1))));
     if (avg > bestAvgScore) {
       bestAvgScore = avg;
       overallWinner = m;
     }
   }
-  avgRow.push(overallWinner);
+  avgRow.push(pc.bold(pc.green(overallWinner)));
   table.push(avgRow);
 
-  const costRow: (string | number)[] = ['AVG Cost'];
+  const costRow: (string | number)[] = [pc.bold('AVG Cost')];
   for (const m of models) {
     const costs = modelCosts[m];
     if (costs.length === 0) {
-      costRow.push('N/A');
+      costRow.push(pc.dim('N/A'));
       continue;
     }
     const avg = costs.reduce((a, b) => a + b, 0) / costs.length;
-    costRow.push(`$${avg.toFixed(4)}`);
+    costRow.push(costColor(avg)(`$${avg.toFixed(4)}`));
   }
   costRow.push('');
   table.push(costRow);
 
-  const ttftRow: (string | number)[] = ['AVG TTFT'];
+  const ttftRow: (string | number)[] = [pc.bold('AVG TTFT')];
   for (const m of models) {
     const ttfts = modelTtfts[m];
     if (ttfts.length === 0) {
-      ttftRow.push('N/A');
+      ttftRow.push(pc.dim('N/A'));
       continue;
     }
     const avg = ttfts.reduce((a, b) => a + b, 0) / ttfts.length;
-    ttftRow.push(`${avg.toFixed(0)}ms`);
+    ttftRow.push(ttftColor(avg)(`${avg.toFixed(0)}ms`));
   }
   ttftRow.push('');
   table.push(ttftRow);
 
-  const tpRow: (string | number)[] = ['AVG Tok/s'];
+  const tpRow: (string | number)[] = [pc.bold('AVG Tok/s')];
   for (const m of models) {
     const tps = modelThroughputs[m];
     if (tps.length === 0) {
-      tpRow.push('N/A');
+      tpRow.push(pc.dim('N/A'));
       continue;
     }
     const avg = tps.reduce((a, b) => a + b, 0) / tps.length;
-    tpRow.push(avg.toFixed(1));
+    tpRow.push(pc.cyan(avg.toFixed(1)));
   }
   tpRow.push('');
   table.push(tpRow);

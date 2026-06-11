@@ -1,5 +1,7 @@
 #!/usr/bin/env node
 
+import pc from 'picocolors';
+
 import { filterBenchmarks, loadBenchmarks } from './benchmarks/index.js';
 import { parseArgs } from './cli/parser.js';
 import { exportCSV, exportJSON } from './output/exporters.js';
@@ -10,20 +12,20 @@ import { getProvider } from './providers/index.js';
 async function main(): Promise<void> {
   const args = parseArgs();
 
-  console.log('\n Initializing pricing...');
+  console.log(pc.dim('\nInitializing pricing...'));
   await initPricing();
 
-  console.log('\n Loading benchmarks...');
+  console.log(pc.dim('\nLoading benchmarks...'));
   const allBenchmarks = await loadBenchmarks();
   const benchmarks = filterBenchmarks(allBenchmarks, args.benchmarkType);
 
   if (benchmarks.length === 0) {
-    console.error(`No benchmarks found for "${args.benchmarkType}".`);
-    console.error(`Available benchmarks: ${allBenchmarks.map((b) => b.name).join(', ')}`);
+    console.error(pc.red(`No benchmarks found for "${args.benchmarkType}".`));
+    console.error(pc.red(`Available benchmarks: ${allBenchmarks.map((b) => b.name).join(', ')}`));
     process.exit(1);
   }
 
-  console.log(` Running ${benchmarks.length} benchmark(s) on ${args.models.length} model(s)...\n`);
+  console.log(pc.bold(`\nRunning ${benchmarks.length} benchmark(s) on ${args.models.length} model(s)...`));
 
   const results = {
     models: args.models.map((s) => `${s.provider}:${s.model}`),
@@ -43,24 +45,33 @@ async function main(): Promise<void> {
     const modelKey = `${providerName}:${modelName}`;
 
     if (args.verbose) {
-      console.log(`\n Model: ${modelKey}`);
+      console.log(pc.cyan(`\nModel: ${modelKey}`));
     }
 
-    let provider;
+    let provider: ReturnType<typeof getProvider>;
     try {
       provider = getProvider(providerName);
     } catch (err) {
-      console.error(`Error: ${(err as Error).message}`);
+      console.error(pc.red(`Error: ${(err as Error).message}`));
       process.exit(1);
     }
 
     const benchmarkPromises = benchmarks.map(async (bm) => {
-      if (args.verbose) {
-        console.log(`  → ${bm.name}...`);
-      }
+      console.log(`\n  ${pc.cyan(bm.name)} ${pc.dim(bm.description)}`);
 
       try {
-        const result = await bm.run(provider, modelName);
+        const result = await bm.run(provider, modelName, (ev) => {
+          const icon = ev.correct ? pc.green('✓') : pc.red('✗');
+          const snippet = ev.responseSnippet.length > 50 ? `${ev.responseSnippet.slice(0, 50)}…` : ev.responseSnippet;
+          console.log(
+            `    ${pc.dim(`Q${ev.questionIndex}/${ev.totalQuestions}`)} ${icon}  ` +
+              `${pc.bold(`score=${ev.correct ? 1 : 0}`)}  ` +
+              `${pc.yellow(`${ev.ttft}ms`)} ttft  ` +
+              `${pc.yellow(`${ev.tokens}`)} tokens  ` +
+              `${pc.yellow(`${ev.throughput}`)} tok/s  ` +
+              `${pc.dim(`respuesta="${snippet}"`)}`,
+          );
+        });
         result.cost = calculateCost(
           providerName,
           modelName,
@@ -68,12 +79,15 @@ async function main(): Promise<void> {
           result.completionTokens || result.tokens || 0,
         );
         results.runs[bm.name][modelKey] = result;
-
-        if (args.verbose) {
-          console.log(`  ✓ ${bm.name}: score=${result.score}, ttft=${result.ttft}ms, cost=$${result.cost.toFixed(4)}`);
-        }
+        const scoreColor = result.score >= 80 ? pc.green : result.score >= 50 ? pc.yellow : pc.red;
+        console.log(
+          `  ${pc.green('✓')} ${pc.cyan(bm.name)}: ` +
+            `${scoreColor(pc.bold(`score=${result.score}/100`))}  ` +
+            `${pc.dim(`${result.ttft}ms`)}  ` +
+            `${pc.yellow(`$${result.cost.toFixed(4)}`)} cost`,
+        );
       } catch (err) {
-        console.error(`  ✗ ${bm.name}: Error - ${(err as Error).message}`);
+        console.error(`  ${pc.red('✗')} ${pc.cyan(bm.name)}: ${pc.red((err as Error).message)}`);
         results.runs[bm.name][modelKey] = {
           score: 0,
           ttft: 0,
@@ -101,10 +115,10 @@ async function main(): Promise<void> {
   const totalCost = Object.values(results.runs).reduce((sum, modelRuns) => {
     return sum + Object.values(modelRuns).reduce((s, r) => s + (r.cost || 0), 0);
   }, 0);
-  console.log(` Total estimated cost: $${totalCost.toFixed(4)}`);
+  console.log(pc.bold(`\nTotal estimated cost: ${pc.yellow(`$${totalCost.toFixed(4)}`)}`));
 }
 
 main().catch((err) => {
-  console.error('Error:', (err as Error).message);
+  console.error(pc.red(`Error: ${(err as Error).message}`));
   process.exit(1);
 });

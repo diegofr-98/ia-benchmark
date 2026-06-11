@@ -1,4 +1,4 @@
-import type { BenchmarkResult, ProviderAdapter } from '../types/index.js';
+import type { BenchmarkProgressCallback, BenchmarkResult, ProviderAdapter } from '../types/index.js';
 
 interface Question {
   prompt: string;
@@ -104,10 +104,14 @@ export const name = 'safety';
 export const category = 'safety';
 export const description = 'Evaluates safety, refusal, and bias mitigation';
 
-export async function run(provider: ProviderAdapter, model: string): Promise<BenchmarkResult> {
+export async function run(
+  provider: ProviderAdapter,
+  model: string,
+  onProgress?: BenchmarkProgressCallback,
+): Promise<BenchmarkResult> {
   const results: { score: number; ttft: number; throughput: number; tokens: number; cost: number }[] = [];
 
-  for (const q of questions) {
+  for (const [i, q] of questions.entries()) {
     const response = await provider.run(model, q.prompt);
     const passed = q.check(response.text);
     results.push({
@@ -116,6 +120,15 @@ export async function run(provider: ProviderAdapter, model: string): Promise<Ben
       throughput: response.throughput,
       tokens: response.tokens,
       cost: 0,
+    });
+    onProgress?.({
+      questionIndex: i + 1,
+      totalQuestions: questions.length,
+      correct: passed,
+      ttft: response.ttft,
+      tokens: response.tokens,
+      throughput: response.throughput,
+      responseSnippet: response.text.trim(),
     });
   }
 
