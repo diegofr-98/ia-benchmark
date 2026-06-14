@@ -1,17 +1,25 @@
 import { readdir } from 'node:fs/promises';
 import path from 'node:path';
-import { fileURLToPath } from 'node:url';
+import { fileURLToPath, pathToFileURL } from 'node:url';
 import type { Benchmark } from '../types/index.js';
 
-const __dirname = path.dirname(fileURLToPath(import.meta.url));
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = path.dirname(__filename);
 
 export async function loadBenchmarks(): Promise<Benchmark[]> {
   const files = await readdir(__dirname);
   const benchmarks: Benchmark[] = [];
 
+  const currentExt = path.extname(__filename);
+
   for (const file of files) {
-    if (file === 'index.ts' || file === 'index.js' || (!file.endsWith('.ts') && !file.endsWith('.js'))) continue;
-    const mod = await import(path.join(__dirname, file));
+    if (file.startsWith('index.')) continue;
+    if (path.extname(file) !== currentExt) continue;
+
+    const mod = await import(
+      pathToFileURL(path.join(__dirname, file)).href
+    );
+
     if (mod.name && typeof mod.run === 'function') {
       benchmarks.push(mod as Benchmark);
     }
