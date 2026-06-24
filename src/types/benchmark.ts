@@ -2,7 +2,6 @@ export interface BenchmarkQuestion {
   prompt: string;
   answer?: string;
   rubric?: 'exact' | 'contains';
-  test?: (code: string) => boolean;
   check?: (text: string) => boolean;
 }
 

@@ -2,7 +2,7 @@ import type { BenchmarkProgressCallback, BenchmarkResult, ProviderAdapter } from
 
 interface Question {
   prompt: string;
-  test: (code: string) => boolean;
+  check: (code: string) => boolean;
 }
 
 const questions: Question[] = [
@@ -10,7 +10,7 @@ const questions: Question[] = [
     prompt: `Write a JavaScript function that checks if a string is a palindrome (reads the same forwards and backwards). Ignore spaces, punctuation, and case.
 
 Return ONLY the function, no explanation.`,
-    test: (code) => {
+    check: (code) => {
       try {
         const fn = eval(`(${code})`) as (s: string) => boolean;
         return fn('racecar') === true && fn('A man a plan a canal Panama') === true && fn('hello') === false;
@@ -23,7 +23,7 @@ Return ONLY the function, no explanation.`,
     prompt: `Write a JavaScript function that takes an array of integers and returns the two numbers that sum to a target. Return them as an array [a, b]. If none exist, return null.
 
 Return ONLY the function, no explanation.`,
-    test: (code) => {
+    check: (code) => {
       try {
         const fn = eval(`(${code})`) as (arr: number[], target: number) => number[] | null;
         const r = fn([2, 7, 11, 15], 9);
@@ -37,7 +37,7 @@ Return ONLY the function, no explanation.`,
     prompt: `Write a JavaScript function that fetches data from a URL and returns the JSON response using async/await.
 
 Return ONLY the function, no explanation.`,
-    test: (code) => {
+    check: (code) => {
       return code.includes('async') && code.includes('await') && code.includes('fetch');
     },
   },
@@ -45,7 +45,7 @@ Return ONLY the function, no explanation.`,
     prompt: `Write a JavaScript function that flattens a nested array (any depth) into a single-level array.
 
 Return ONLY the function, no explanation.`,
-    test: (code) => {
+    check: (code) => {
       try {
         const fn = eval(`(${code})`) as (arr: unknown[]) => unknown[];
         const r = fn([1, [2, [3, [4]], 5]]);
@@ -59,7 +59,7 @@ Return ONLY the function, no explanation.`,
     prompt: `Write a JavaScript function that implements a debounce utility. It should take a function and a delay in ms, and return a debounced version.
 
 Return ONLY the function, no explanation.`,
-    test: (code) => {
+    check: (code) => {
       return code.includes('clearTimeout') && code.includes('setTimeout') && code.includes('apply');
     },
   },
@@ -78,7 +78,7 @@ export async function run(
 
   for (const [i, q] of questions.entries()) {
     const response = await provider.run(model, q.prompt);
-    const passed = q.test(response.text);
+    const passed = q.check(response.text);
     results.push({
       score: passed ? 1 : 0,
       ttft: response.ttft,
