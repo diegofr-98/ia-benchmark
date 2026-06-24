@@ -4,6 +4,8 @@ export interface ParsedArgs {
   json?: string;
   csv?: string;
   verbose: boolean;
+  benchmarkList: boolean;
+  createBenchmark: boolean;
 }
 
 import yargs from 'yargs';
@@ -12,6 +14,8 @@ import { hideBin } from 'yargs/helpers';
 interface YargsArgv {
   all?: boolean;
   'benchmark-type'?: string;
+  'benchmark-list'?: boolean;
+  'create-benchmark'?: boolean;
   json?: string;
   csv?: string;
   verbose?: boolean;
@@ -35,6 +39,16 @@ export function parseArgs(): ParsedArgs {
       type: 'string' as const,
       description: 'Benchmark type to run (name or category)',
     })
+    .option('benchmark-list', {
+      alias: 'L',
+      type: 'boolean' as const,
+      description: 'List custom benchmarks',
+    })
+    .option('create-benchmark', {
+      alias: 'C',
+      type: 'boolean' as const,
+      description: 'Create a new benchmark interactively',
+    })
     .option('json', {
       type: 'string' as const,
       description: 'Export results to JSON',
@@ -49,6 +63,9 @@ export function parseArgs(): ParsedArgs {
       description: 'Verbose mode',
     })
     .check((argv: YargsArgv) => {
+      if (argv['benchmark-list'] || argv['create-benchmark']) {
+        return true;
+      }
       if (argv._.length === 0) {
         throw new Error('Specify at least one model in provider:model format');
       }
@@ -75,5 +92,7 @@ export function parseArgs(): ParsedArgs {
     json: argv.json,
     csv: argv.csv,
     verbose: argv.verbose ?? false,
+    benchmarkList: argv['benchmark-list'] ?? false,
+    createBenchmark: argv['create-benchmark'] ?? false,
   };
 }

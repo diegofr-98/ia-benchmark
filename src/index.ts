@@ -2,6 +2,7 @@
 
 import pc from 'picocolors';
 
+import { createBenchmarkWizard, initPipedPrompt, listCustomBenchmarks, promptUser } from './benchmarks/custom.js';
 import { filterBenchmarks, loadBenchmarks } from './benchmarks/index.js';
 import { parseArgs } from './cli/parser.js';
 import { exportCSV, exportJSON } from './output/exporters.js';
@@ -12,6 +13,29 @@ import { getProvider } from './providers/index.js';
 async function main(): Promise<void> {
   const args = parseArgs();
 
+  if (args.benchmarkList) {
+    const custom = await listCustomBenchmarks();
+    if (custom.length === 0) {
+      console.log(pc.yellow('\nNo custom benchmarks found.'));
+      console.log(pc.dim('Create one with: ia-benchmark --create-benchmark'));
+      return;
+    }
+    console.log(pc.bold(`\nCustom benchmarks (${custom.length}):\n`));
+    for (const b of custom) {
+      console.log(`  ${pc.cyan(b.name)} ${pc.dim(b.description)}`);
+      console.log(`    Type: ${b.type}  |  Questions: ${b.questions.length}`);
+    }
+    return;
+  }
+
+  if (args.createBenchmark) {
+    await initPipedPrompt();
+    await createBenchmarkWizard();
+    return;
+  }
+
+  await initPipedPrompt();
+
   console.log(pc.dim('\nInitializing pricing...'));
   await initPricing();
 
@@ -21,7 +45,16 @@ async function main(): Promise<void> {
 
   if (benchmarks.length === 0) {
     console.error(pc.red(`No benchmarks found for "${args.benchmarkType}".`));
-    console.error(pc.red(`Available benchmarks: ${allBenchmarks.map((b) => b.name).join(', ')}`));
+    const available = allBenchmarks.map((b) => b.name).join(', ');
+    console.error(pc.red(`Available: ${available}`));
+
+    if (args.benchmarkType && args.benchmarkType !== 'all') {
+      const answer = await promptUser(`Create custom benchmark "${args.benchmarkType}"? (Y/n): `);
+      if (answer.toLowerCase() !== 'n') {
+        await createBenchmarkWizard();
+        return;
+      }
+    }
     process.exit(1);
   }
 
