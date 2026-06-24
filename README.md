@@ -102,11 +102,13 @@ Arguments:
   provider:model        Model in provider:name format (e.g. openai:gpt-4o)
 
 Options:
-  -a, --all             Run all benchmarks
-  -b, --benchmark-type  Benchmark type to run (name or category)
-      --json <file>     Export results to JSON
-      --csv <file>      Export results to CSV
-  -v, --verbose         Verbose mode
+  -a, --all                    Run all benchmarks
+  -b, --benchmark-type <name>  Benchmark type to run (name or category)
+  -L, --benchmark-list         List custom benchmarks
+  -C, --create-benchmark       Create a new benchmark interactively
+      --json <file>            Export results to JSON
+      --csv <file>             Export results to CSV
+  -v, --verbose                Verbose mode
 ```
 
 ## Benchmarks incluidos
@@ -120,9 +122,110 @@ Options:
 | `instruction` | instructions | Instruction following |
 | `safety` | safety | Malicious prompt detection |
 
-## Adding a benchmark
+## Custom benchmarks
 
-Create a file in `src/benchmarks/` that exports `name`, `category`, `description`, and a `run` function:
+You can create your own benchmarks **without cloning the repository** using JSON files in the `./custom-benchmarks/` directory. They are loaded automatically alongside the built-in benchmarks.
+
+### Creating a benchmark
+
+**Option 1: Interactive wizard**
+```bash
+ia-benchmark -C
+```
+
+Follow the prompts to add questions and choose grading methods.
+
+**Option 2: Manual JSON**
+
+Create `./custom-benchmarks/my-benchmark.json`:
+
+```json
+{
+  "name": "my-benchmark",
+  "description": "Evaluates basic knowledge",
+  "type": "general",
+  "questions": [
+    { "prompt": "What is the capital of France?", "answer": "Paris", "rubric": "exact" },
+    { "prompt": "What color is the sky?", "answer": "blue", "rubric": "contains" },
+    {
+      "prompt": "Write a function that returns the sum of two numbers",
+      "test_cases": [
+        { "args": "[1, 2]", "expected": 3 },
+        { "args": "[-5, 10]", "expected": 5 }
+      ]
+    }
+  ]
+}
+```
+
+### Running a custom benchmark
+
+```bash
+# Run by name
+ia-benchmark openai:gpt-4o -b my-benchmark
+
+# If the benchmark doesn't exist, it will ask if you want to create it
+ia-benchmark openai:gpt-4o -b new-benchmark
+```
+
+### Listing custom benchmarks
+
+```bash
+ia-benchmark -L
+```
+
+### Question types
+
+| Type | Fields | Description |
+|---|---|---|
+| **Answer exact** | `answer` + `rubric: "exact"` | Response must match the expected answer exactly (case-insensitive) |
+| **Answer contains** | `answer` + `rubric: "contains"` | Response must contain the expected substring |
+| **Check function** | `check` | Arbitrary validation via `(text) => boolean`. You can omit `return` |
+| **Eval code** | `eval` | Evaluates generated code. Receives `code` parameter. Returns boolean |
+| **Test cases** | `test_cases` | Array of `{ args, expected }`. The generated code is called with each test case |
+| **Regex** | `regex` | Response must match the regex pattern |
+
+**Mutual exclusivity:** Each question must use exactly one grading method. `answer` requires `rubric`; `check`, `eval`, `test_cases`, and `regex` are standalone.
+
+#### Check function examples
+
+```json
+{ "prompt": "Say HELLO", "check": "text.trim().toUpperCase() === 'HELLO'" }
+```
+
+The string is evaluated as `new Function('text', ...)`. Auto-wraps with `return` if missing.
+
+#### Eval code examples
+
+```json
+{ "prompt": "Write a JS add function", "eval": "const fn = eval('(' + code + ')'); return fn(1,2) === 3 && fn(-5,10) === 5" }
+```
+
+Receives `code` (the model's response) as parameter.
+
+#### Test cases example
+
+```json
+{
+  "prompt": "Write a JS square function. Return ONLY the function.",
+  "test_cases": [
+    { "args": "[4]", "expected": 16 },
+    { "args": "[0]", "expected": 0 }
+  ]
+}
+```
+
+Each test case calls `eval(code)(...args)` and compares result with `expected` using deep equality.
+
+#### Regex example
+
+```json
+{ "prompt": "Give me a 4-digit number", "regex": "^\\d{4}$" }
+```
+
+## Adding a benchmark (development)
+
+To add a built-in benchmark, create a file in `src/benchmarks/` that exports `name`, `category`, `description`, and a `run` function:
 
 ```ts
 // src/benchmarks/my-benchmark.ts
@@ -144,7 +247,7 @@ export async function run(provider: ProviderAdapter, model: string): Promise<Ben
 }
 ```
 
-It is loaded automatically at runtime.
+Files placed in `src/benchmarks/` are loaded automatically at runtime. Custom JSON benchmarks are merged with built-in ones seamlessly.
 
 ## Adding a provider
 
