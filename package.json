@@ -1,6 +1,6 @@
 {
   "name": "ia-benchmark",
-  "version": "1.0.3",
+  "version": "1.0.4",
   "description": "CLI to run AI model benchmarks across multiple providers (OpenAI, Anthropic, Google)",
   "type": "module",
   "bin": "dist/index.js",
